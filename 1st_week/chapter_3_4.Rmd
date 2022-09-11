@@ -1,0 +1,377 @@
+---
+title: "R For Social Scientists - Chapter 3 and 4"
+author: "Efe Kiremitci"
+date: "2022-09-11"
+output: pdf_document
+---
+# Chapter 3 - Starting with Data
+
+## What are data frames and tibbles
+
+Data frames are the de facto data structure for tabular data in R, and what we use for data processing, statistics, and plotting. A data frame is the representation of data in the format of a table where the columns are vectors, each column must contain a single type of data (integers, characters, factors).
+
+```{r eval=TRUE}
+library(tidyverse)
+library(here)
+
+interviews <- read_csv(
+  here("data", "SAFI_clean.csv"),
+  na = "NULL")
+
+```
+
+In the above code, we notice the here() function takes folder and file names as inputs (e.g., "data", "SAFI_clean.csv"), each enclosed in quotations ("") and separated by a comma. The here() will accept as many names as are necessary to navigate to a particular file (e.g., here("analysis", "data", "surveys", "clean", "SAFI_clean.csv)).
+
+The here() function can accept the folder and file names in an alternate format, using a slash (“/”) rather than commas to separate the names. The two methods are equivalent, so that here("data", "SAFI_clean.csv") and here("data/SAFI_clean.csv") produce the same result.
+
+Overall, read.csv() behaves similar to read_csv(), with a few notable differences. First, read.csv() coerces column names with spaces and/or special characters to different names (e.g. interview date becomes interview.date). Second, read.csv() stores data as a data.frame, where read_csv() stores data as a tibble.
+
+If we want to check that our data has been loaded, we can see the contents of the data frame by typing its name: interviews in the console.
+
+```{r eval=TRUE}
+interviews ## first ten rows
+
+view(interviews) # opens the dataset in a different tab
+
+head(interviews) # first 6-7 rows as a first glimpse to the data
+
+```
+Note that read_csv() actually loads the data as a tibble. A tibble is an extension of R data frames used by the tidyverse. When the data is read using read_csv(), it is stored in an object of class tbl_df, tbl, and data.frame. You can see the class of an object with
+```{r eval=TRUE}
+class(interviews)
+
+```
+
+## Inspecting data frames
+
+When calling a tbl_df object (like interviews here), there is already a lot of information about our data frame being displayed such as the number of rows, the number of columns, the names of the columns, and as we just saw the class of data stored in each column. However, there are functions to extract this information from data frames. Here is a non-exhaustive list of some of these functions. 
+
+Size
+  - dim(interviews) - returns a vector with the number of rows as the first element, and the number of columns as the second element (the dimensions of the object)
+  - nrow(interviews) - returns the number of rows
+  - ncol(interviews) - returns the number of columns
+  
+Content
+  - head(interviews) - shows the first 6 rows
+  - tail(interviews) - shows the last 6 rows
+
+Names
+  - names(interviews) - returns the colum names (synonyms of colnames() for data.frame objects)
+  
+Summary
+  - str(interviews) - structure of the object and information about the class, length and content of each column
+  - summary(interviews) - summary statistics for each column
+  - glimpse(interviews) - returns the number of columns and rows of the tibble, the names and class of each column, and previews as many values will fit on the screen. Unlike the other inspecting functions listed above, glimpse() is not a “base R” function so you need to have the dplyr or tibble packages loaded to be able to execute it.
+
+Note: most of these functions are “generic.” They can be used on other types of objects besides data frames or tibbles.
+
+## Indexing and subsetting data frames
+
+Our interviews data frame has rows and columns (it has 2 dimensions). In practice, we may not need the entire data frame; for instance, we may only be interested in a subset of the observations (the rows) or a particular set of variables (the columns). If we want to extract some specific data from it, we need to specify the “coordinates” we want from it. Row numbers come first, followed by column numbers.
+
+```{r eval=TRUE}
+# first element in the first column of the tibble
+interviews[1, 1]
+
+```
+
+```{r eval=TRUE}
+# first element in the 6th column of the tibble
+
+interviews[1, 6]
+```
+```{r eval=TRUE}
+# first column of the tibble as a vector
+interviews[[1]]
+
+```
+
+```{r}
+## first column of the tibble
+interviews[1]
+```
+
+```{r}
+# first three element in the 7th column of the tibble
+interviews[1:3, 7]
+```
+
+```{r eval=TRUE}
+# the 3rd row of the tibble
+interviews[3,]
+```
+```{r eval=TRUE}
+# equivalent to head_interviews <- head(interviews)
+head_interviews <- interviews[1:6, ] # just like head() it shows the first 6 rows of the dataset
+
+interviews[-c(7:131), ]   # Equivalent to head(interviews)
+
+```
+
+```{r eval=TRUE}
+# The whole tibble, except the first column
+interviews[, -1]
+```
+tibbles can be subset by calling indices (above examples), but also by calling their column names directly
+```{r eval=TRUE}
+interviews["village"]       # Result is a tibble
+
+interviews[, "village"]     # Result is a tibble
+
+interviews[["village"]]     # Result is a vector
+
+interviews$village          # Result is a vector
+
+```
+ ## Example
+ 
+ 1. Create a tibble (interviews_100) containing only the data in row 100 of the interviews dataset
+ 2. Notive how nrow() gave you the number of rows in the tibble?
+  - Use that number to pull out just that last rows in the tibble.
+  - Compare that with what you see as the last row using tail() to make sure it's meeting expectations
+  - Pull out that last row using nrow() instead of the row number.
+  - Create a new tibble (interviews_last) from that last row.
+ 3. Using the number of rows in the interviews dataset that you found in question 2, extract the row that is in the middle of the dataset. Store the content of this middle row in an object named interviews_middle. (hint: This dataset has an odd number of rows, so finding the middle is a bit trickier than dividing n_rows by 2. Use the median( ) function and what you’ve learned about sequences in R to extract the middle row!
+
+ 4. Combine nrow() with the - notation above to reproduce the behavior of head(interviews), keeping just the first through 6th rows of the interviews dataset.
+
+```{r eval=TRUE}
+interviews_100 <- interviews[100, ] # step 1
+
+nrow(interviews) # to see how many rows dataset has
+nrows <- nrow(interviews)
+
+interviews_last <- interviews[nrows, ] 
+
+interviews_middle <- interviews[median(1:nrows), ] # 3
+
+interviews_head <- interviews[-(7:nrows), ] # 4
+```
+
+## Factors
+
+R has a special data class, called factor, to deal with categorical data that you may encounter when creating plots or doing statistical analyses. Factors are very useful and actually contribute to making R particularly well suited to working with data. So we are going to spend a little time introducing them.
+
+Factors represent categorical data. They are stored as integers associated with labels and they can be ordered (ordinal) or unordered (nominal). Factors create a structured relation between the different levels (values) of a categorical variable, such as days of the week or responses to a question in a survey. This can make it easier to see how one element relates to the other elements in a column. While factors look (and often behave) like character vectors, they are actually treated as integer vectors by R. So you need to be very careful when treating them as strings.
+
+Once created, factors can only contain a pre-defined set of values, known as levels. By default, R always sorts levels in alphabetical order. For instancem if you have a factor with 2 levels:
+
+```{r eval=TRUE}
+
+respondent_floor_type <- factor(c("earth", "cement", "earth"))
+
+```
+R will assign 1 to the level "cement" and 2 to the level "earth" (because c comes before e even though the first element is in this vector is "earth"). You can see this by using the function levels() and you can find the number of levels using nlevels():
+
+```{r eval=TRUE}
+levels(respondent_floor_type) #name of the levels
+
+```
+
+```{r eval=TRUE}
+nlevels(respondent_floor_type) #number of levels
+```
+Sometimes, the order of the factors does not matter. Other times you might want to specify the order because it is meaningful (e.g., “low”, “medium”, “high”). It may improve your visualization, or it may be required by a particular type of analysis. Here, one way to reorder our levels in the respondent_floor_type vector would be:
+
+```{r eval=TRUE}
+respondent_floor_type # current order
+```
+
+```{r eval=TRUE}
+respondent_floor_type <- factor(respondent_floor_type,
+                                levels = c("earth", "cement")) # we changed the order and make earth the first level
+
+respondent_floor_type
+```
+In R’s memory, these factors are represented by integers (1, 2), but are more informative than integers because factors are self describing: "cement", "earth" is more descriptive than 1, and 2. Which one is “earth”? You wouldn’t be able to tell just from the integer data. Factors, on the other hand, have this information built in. It is particularly helpful when there are many levels. It also makes renaming levels easier. Let’s say we made a mistake and need to recode “cement” to “brick”. We can do this using the fct_recode() function from the forcats package (included in the tidyverse) which provides some extra tools to work with factors.
+
+```{r eval=TRUE}
+levels(respondent_floor_type) # check current order
+
+respondent_floor_type <- fct_recode(respondent_floor_type, brick = "cement")
+
+levels(respondent_floor_type) # check the levels after you changed it
+``` 
+So far, your factor is unordered, like a nominal variable. R does not know the difference between a nominal and an ordinal variable. You make your factor an ordered factor by using the ordered=TRUE option inside your factor function. Note how the reported levels changed from the unordered factor above to the ordered version below. Ordered levels use the less than sign < to denote level ranking.
+
+```{r eval=TRUE}
+respondent_floor_type_ordered <- factor(respondent_floor_type, ordered = TRUE)
+
+respondent_floor_type_ordered
+```
+
+## Converting factors
+
+If you need to convert a factor to a character vector, you use as.character(x)
+
+```{r eval=TRUE}
+as.character(respondent_floor_type)
+
+```
+Converting factors where the levels appear as numbers (such as concentration levels, or years) to a numeric vector is a little trickier. The as.numeric() function returns the index values of the factor, not its levels, so it will result in an entirely new (and unwanted in this case) set of numbers. One method to avoid this is to convert factors to characters, and then to numbers. Another method is to use the levels() function. Compare:
+
+```{r eval=TRUE}
+year_fct <- factor(c(1990, 1983, 1977, 1998, 1990))
+
+as.numeric(year_fct) # The outcome is the order of the levels, not the levels itself
+```
+
+```{r eval=TRUE}
+as.numeric(as.character(year_fct)) # first, we convert them into characters and then numeric values
+
+```
+
+```{r eval=TRUE}
+# The recommended way
+
+as.numeric(levels(year_fct))[year_fct]
+```
+Notice that in the recommended levels() approach, three important steps occur:
+  - We obtain all the factor levels using levels(year_fct)
+  - We convert these levels to numeric values using as.numeric(levels(year_fct))
+  - We then access these numeric values using the underlying integers of the vector year_fct inside the square brackets
+  
+## Renaming Factors
+
+When your data is stored as a factor, you can use the plot() function to get a quick glance at the number of observations represented by each factor level. Let’s extract the memb_assoc column from our data frame, convert it into a factor, and use it to look at the number of interview respondents who were or were not members of an irrigation association:
+
+```{r eval=TRUE}
+## create a vector from the data frame column "memb_assoc"
+memb_assoc <- interviews$memb_assoc
+
+## convert it into a factor
+
+memb_assoc <- as.factor(memb_assoc)
+
+## let's see what it looks like
+memb_assoc
+```
+
+```{r eval=TRUE}
+## bar plot of the number of interview respondents who were
+## members of irrigation association:
+plot(memb_assoc)
+```
+Looking at the plot compared to the output of the vector, we can see that in addition to “no”s and “yes”s, there are some respondents for which the information about whether they were part of an irrigation association hasn’t been recorded, and encoded as missing data. They do not appear on the plot. Let’s encode them differently so they can counted and visualized in our plot.
+
+```{r eval=TRUE}
+
+## let's recreate the vector from the data frame column "memb_assoc"
+memb_assoc <- interviews$memb_assoc
+
+## replace the missing data with "undetermined"
+memb_assoc[is.na(memb_assoc)] <- "undetermined"
+
+## convert it into a factor
+
+memb_assoc <- as.factor(memb_assoc)
+memb_assoc
+```
+
+```{r eval=TRUE}
+## bar plot of the number of interview respondents who were
+## members of irrigation association:
+plot(memb_assoc)
+```
+## Example
+  - Rename the levels of the factor to have the first letter in uppercase: “No”,”Undetermined”, and “Yes”.
+  - Now that we have renamed the factor level to “Undetermined”, can you recreate the barplot such that “Undetermined” is last (after “Yes”)?
+
+
+```{r eval=TRUE}
+memb_assoc <- fct_recode(memb_assoc, No = "no",
+                         Undetermined = "undetermined", Yes = "yes") # Rename the levels
+
+memb_assoc
+
+memb_assoc <- factor(memb_assoc, levels= c("No", "Yes", "Undetermined")) # ordering the levels
+
+plot(memb_assoc)
+```
+## Formatting Dates
+
+One of the most common issues that new (and experienced!) R users have is converting date and time information into a variable that is appropriate and usable during analyses. A best practice for dealing with date data is to ensure that each component of your date is available as a separate variable. In our dataset, we have a column interview_date which contains information about the year, month, and day that the interview was conducted. Let’s convert those dates into three separate columns.
+
+```{r eval=TRUE}
+str(interviews)
+```
+We are going to use the package lubridate, which is included in the tidyverse intallation but not loaded by default, so we have to load it explicitly with library(lubridate). 
+```{r eval=TRUE}
+install.packages("lubridate")
+library(lubridate)
+```
+The lubridate function ymd() takes a vector representing year, month, and day, and converts it to a Date vector. Date is a class of data recognized by R as being a date and can be manipulated as such. The argument that the function requires is flexible, but, as a best practice, is a character vector formatted as “YYYY-MM-DD”
+
+```{r eval=TRUE}
+dates <- interviews$interview_date
+
+str(dates)
+```
+When we imported the data in R, read_csv() recognized that this column contained date information. We can now use the day(), month() and year() functions to extract this information from the date, and create new columns in our data frame to store it:
+```{r eval=TRUE}
+interviews$day <- day(dates)
+
+interviews$month <- month(dates)
+
+interviews$year <- year(dates)
+
+interviews
+```
+In our example, aboce the interview_date() column was read in correctly as a Date variable but generally that is not the case. Date columns are often read in as character variables and one can use the as_Date() function to convert them to the appropriate Date/POSIXct format.
+
+Let's say we have a vector of dates in character format:
+```{r eval=TRUE}
+
+char_dates <- c("7/31/2012", "8/9/2014", "4/30/2016")
+
+str(char_dates)
+```
+
+We can convert this vector to dates as:
+```{r eval=TRUE}
+
+as_date(char_dates, format = "%m/%d/%Y")
+```
+We can also use functions ymd(), mdy(), dmy() to convert character variables to date.
+```{r eval=TRUE}
+mdy(char_dates)
+```
+
+
+# Data Wrangling with dplyr and tidyr
+
+dplyr is a package for making tabular data wrangling easier by using a limited set of functions that can be combined to extract and summarize insights from your data. It pairs nicely with tidyr which enables you to swiftly convert between different data formats (long vs. wide) for plotting and analysis.
+
+## Learning dplyr and tidyr
+```{r eval=TRUE}
+library(tidyverse)
+library(here)
+
+interviews <- read_csv(here("data", "SAFI_clean.csv"), na = "NULL")
+
+## inspect the data
+interviews
+
+## preview the data
+view(interviews)
+```
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
